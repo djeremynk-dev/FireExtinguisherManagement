@@ -1,0 +1,6 @@
+{
+  "name": "Fire Extinguisher Management",
+  "description": "A RESTful microservices-based fire extinguisher management, inspection, maintenance logging, and reporting system for TZW LTD.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
