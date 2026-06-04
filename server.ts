@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import crypto from "crypto";
 import fs from "fs";
+import swaggerUi from "swagger-ui-express";
 import { createServer as createViteServer } from "vite";
 import {
   db,
@@ -94,79 +95,202 @@ function authorize(roles: Role[]) {
 }
 
 // ==========================================
-// Swagger / OpenAPI documentation JSON route
+// Swagger / OpenAPI documentation spec
 // ==========================================
-app.get("/api/docs", (req, res) => {
-  res.json({
-    openapi: "3.0.0",
-    info: {
-      title: "TZW LTD - Fire Extinguisher Management API Microservices",
-      description: "RESTful endpoints for managing Users, Authentication, Fire Extinguishers, Inspections, Maintenance Logs, and Real-time Reports.",
-      version: "1.0.0-micro",
+const swaggerSpec = {
+  openapi: "3.0.0",
+  info: {
+    title: "TZW LTD - Fire Extinguisher Management API Microservices",
+    description: "RESTful endpoints for managing Users, Authentication, Fire Extinguishers, Inspections, Maintenance Logs, and Real-time Reports.",
+    version: "1.0.0-micro",
+  },
+  servers: [
+    {
+      url: "http://localhost:3000",
+      description: "Development server",
     },
-    paths: {
-      "/api/auth/register": {
-        post: {
-          summary: "Register a new user",
-          requestBody: {
-            required: true,
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    firstName: { type: "string" },
-                    lastName: { type: "string" },
-                    email: { type: "string" },
-                    password: { type: "string" },
-                    role: { type: "string", enum: ["ADMIN", "INSPECTOR", "USER"] },
-                  },
-                  required: ["firstName", "lastName", "email", "password"],
+  ],
+  paths: {
+    "/api/auth/register": {
+      post: {
+        summary: "Register a new user",
+        tags: ["Authentication"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  firstName: { type: "string", description: "User's first name" },
+                  lastName: { type: "string", description: "User's last name" },
+                  email: { type: "string", format: "email", description: "User's email address" },
+                  password: { type: "string", format: "password", description: "User's password" },
+                  role: { type: "string", enum: ["ADMIN", "INSPECTOR", "USER"], description: "User role" },
                 },
+                required: ["firstName", "lastName", "email", "password"],
               },
             },
           },
-          responses: {
-            201: { description: "User registered successfully" },
-            400: { description: "Validation failure or duplicate user" },
-          },
         },
-      },
-      "/api/auth/login": {
-        post: {
-          summary: "Authenticate user and get JWT",
-          requestBody: {
-            required: true,
-            requiredFields: ["email", "password"],
-          },
-          responses: {
-            200: { description: "Login successful with token" },
-            401: { description: "Invalid credentials" },
-          },
+        responses: {
+          "201": { description: "User registered successfully" },
+          "400": { description: "Validation failure or duplicate user" },
         },
-      },
-      "/api/extinguishers": {
-        get: { summary: "Retrieve all fire extinguishers" },
-        post: { summary: "Register an extinguisher (Admin only)" },
-      },
-      "/api/extinguishers/{id}": {
-        get: { summary: "Get details for an extinguisher" },
-        put: { summary: "Modify extinguisher fields (Admin/Inspector)" },
-        delete: { summary: "Remove extinguisher (Admin only)" },
-      },
-      "/api/inspections": {
-        get: { summary: "View scheduled/completed inspections" },
-        post: { summary: "Schedule new inspection" },
-      },
-      "/api/maintenance": {
-        get: { summary: "Get maintenance logs history" },
-        post: { summary: "Record maintenance action (Inspector/Admin)" },
-      },
-      "/api/reports": {
-        get: { summary: "Fetch inventory, compliance, statistics (Admin/Inspector)" },
       },
     },
-  });
+    "/api/auth/login": {
+      post: {
+        summary: "Authenticate user and get JWT",
+        tags: ["Authentication"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  email: { type: "string", format: "email", description: "User's email address" },
+                  password: { type: "string", format: "password", description: "User's password" },
+                },
+                required: ["email", "password"],
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "Login successful with token" },
+          "401": { description: "Invalid credentials" },
+        },
+      },
+    },
+    "/api/extinguishers": {
+      get: {
+        summary: "Retrieve all fire extinguishers",
+        tags: ["Extinguishers"],
+        responses: {
+          "200": { description: "List of fire extinguishers" },
+        },
+      },
+      post: {
+        summary: "Register an extinguisher (Admin only)",
+        tags: ["Extinguishers"],
+        responses: {
+          "201": { description: "Extinguisher registered successfully" },
+        },
+      },
+    },
+    "/api/extinguishers/{id}": {
+      get: {
+        summary: "Get details for an extinguisher",
+        tags: ["Extinguishers"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": { description: "Extinguisher details" },
+          "404": { description: "Extinguisher not found" },
+        },
+      },
+      put: {
+        summary: "Modify extinguisher fields (Admin/Inspector)",
+        tags: ["Extinguishers"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": { description: "Extinguisher updated successfully" },
+          "404": { description: "Extinguisher not found" },
+        },
+      },
+      delete: {
+        summary: "Remove extinguisher (Admin only)",
+        tags: ["Extinguishers"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": { description: "Extinguisher deleted successfully" },
+          "404": { description: "Extinguisher not found" },
+        },
+      },
+    },
+    "/api/inspections": {
+      get: {
+        summary: "View scheduled/completed inspections",
+        tags: ["Inspections"],
+        responses: {
+          "200": { description: "List of inspections" },
+        },
+      },
+      post: {
+        summary: "Schedule new inspection",
+        tags: ["Inspections"],
+        responses: {
+          "201": { description: "Inspection scheduled successfully" },
+        },
+      },
+    },
+    "/api/maintenance": {
+      get: {
+        summary: "Get maintenance logs history",
+        tags: ["Maintenance"],
+        responses: {
+          "200": { description: "List of maintenance logs" },
+        },
+      },
+      post: {
+        summary: "Record maintenance action (Inspector/Admin)",
+        tags: ["Maintenance"],
+        responses: {
+          "201": { description: "Maintenance log created successfully" },
+        },
+      },
+    },
+    "/api/reports": {
+      get: {
+        summary: "Fetch inventory, compliance, statistics (Admin/Inspector)",
+        tags: ["Reports"],
+        responses: {
+          "200": { description: "Report data" },
+        },
+      },
+    },
+  },
+};
+
+// JSON API Docs endpoint (for programmatic access)
+app.get("/api/docs/json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.json(swaggerSpec);
+});
+
+// Set up Swagger UI with serialized spec
+app.use("/api/docs", swaggerUi.serve);
+app.get("/api/docs", swaggerUi.setup(null, {
+  swaggerOptions: {
+    url: "/api/docs/json",        // Let Swagger UI fetch the JSON spec
+  },
+  customCss: '.swagger-ui { font-family: system-ui, -apple-system, sans-serif; }',
+}));
+app.get("/api/docs/json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.json(swaggerSpec);
 });
 
 // ==========================================================
