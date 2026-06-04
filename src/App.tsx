@@ -573,7 +573,7 @@ export default function App() {
             </div>
 
             {/* Quick Presets Login buttons */}
-            <div className="space-y-2.5 pt-8 border-t border-slate-800/80">
+            {/* <div className="space-y-2.5 pt-8 border-t border-slate-800/80">
               <span className="text-[10px] uppercase font-bold text-slate-500 font-mono tracking-wider block">
                 ⭐ QUICK DEV CREDENTIAL PRESETS
               </span>
@@ -606,7 +606,7 @@ export default function App() {
                 </button>
               </div>
               <p className="text-[10px] text-slate-500 text-center font-mono mt-1">Predefined passcodes are: password123</p>
-            </div>
+            </div> */}
           </div>
 
           {/* Right panel: Active Auth Form */}

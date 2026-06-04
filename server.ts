@@ -489,21 +489,22 @@ app.delete("/api/users/:id", authenticate, authorize(["ADMIN"]), (req, res) => {
 // ==========================================================
 
 // Register/Create new fire extinguisher
-app.post("/api/extinguishers", authenticate, authorize(["ADMIN"]), (req, res) => {
+app.post("/api/extinguishers", authenticate, authorize(["ADMIN"]), (req: any, res) => {
   const { serialNumber, location, building, type, size, installationDate, expiryDate } = req.body;
 
   if (!serialNumber || !location || !building || !type || !size || !installationDate || !expiryDate) {
     return res.status(400).json({ error: "All properties (serialNumber, location, building, type, size, installationDate, expiryDate) are required." });
   }
 
-  // Check duplicate Serial
+  // Check duplicate Serial within user's extinguishers
   const all = db.getExtinguishers();
-  if (all.some((e) => e.serialNumber.trim().toUpperCase() === serialNumber.trim().toUpperCase())) {
+  if (all.some((e) => e.userId === req.user.id && e.serialNumber.trim().toUpperCase() === serialNumber.trim().toUpperCase())) {
     return res.status(400).json({ error: `A fire extinguisher with Serial Number ${serialNumber} is already registered.` });
   }
 
   const newExt: any = {
     id: "ext-" + crypto.randomUUID().slice(0, 8),
+    userId: req.user.id,
     serialNumber: serialNumber.toUpperCase().trim(),
     building: building.trim(),
     location: location.trim(),
@@ -524,31 +525,32 @@ app.post("/api/extinguishers", authenticate, authorize(["ADMIN"]), (req, res) =>
 });
 
 // List All Extinguishers
-app.get("/api/extinguishers", authenticate, (req, res) => {
+app.get("/api/extinguishers", authenticate, (req: any, res) => {
   const all = db.getExtinguishers();
-  return res.json(all);
+  const userExtinguishers = all.filter((e) => e.userId === req.user.id);
+  return res.json(userExtinguishers);
 });
 
 // Get Extinguisher Details by ID
-app.get("/api/extinguishers/:id", authenticate, (req, res) => {
+app.get("/api/extinguishers/:id", authenticate, (req: any, res) => {
   const ext = db.getExtinguisherById(req.params.id);
-  if (!ext) {
+  if (!ext || ext.userId !== req.user.id) {
     return res.status(404).json({ error: "Fire extinguisher profile not found." });
   }
   return res.json(ext);
 });
 
 // Update Extinguisher (Accessible to Admin and Inspectors)
-app.put("/api/extinguishers/:id", authenticate, authorize(["ADMIN", "INSPECTOR"]), (req, res) => {
+app.put("/api/extinguishers/:id", authenticate, authorize(["ADMIN", "INSPECTOR"]), (req: any, res) => {
   const { serialNumber, location, building, type, size, installationDate, expiryDate, status } = req.body;
   const ext = db.getExtinguisherById(req.params.id);
-  if (!ext) {
+  if (!ext || ext.userId !== req.user.id) {
     return res.status(404).json({ error: "Fire extinguisher not found." });
   }
 
   if (serialNumber) {
     const all = db.getExtinguishers();
-    const dup = all.find((e) => e.serialNumber.trim().toUpperCase() === serialNumber.trim().toUpperCase() && e.id !== req.params.id);
+    const dup = all.find((e) => e.userId === req.user.id && e.serialNumber.trim().toUpperCase() === serialNumber.trim().toUpperCase() && e.id !== req.params.id);
     if (dup) {
       return res.status(400).json({ error: `Serial Number ${serialNumber} is already taken by another unit.` });
     }
@@ -572,7 +574,11 @@ app.put("/api/extinguishers/:id", authenticate, authorize(["ADMIN", "INSPECTOR"]
 });
 
 // Delete Extinguisher (Admin only)
-app.delete("/api/extinguishers/:id", authenticate, authorize(["ADMIN"]), (req, res) => {
+app.delete("/api/extinguishers/:id", authenticate, authorize(["ADMIN"]), (req: any, res) => {
+  const ext = db.getExtinguisherById(req.params.id);
+  if (!ext || ext.userId !== req.user.id) {
+    return res.status(404).json({ error: "Fire extinguisher not found." });
+  }
   const deleted = db.deleteExtinguisher(req.params.id);
   if (!deleted) {
     return res.status(404).json({ error: "Fire extinguisher not found." });
@@ -593,7 +599,7 @@ app.post("/api/inspections", authenticate, (req: any, res) => {
   }
 
   const ext = db.getExtinguisherById(extinguisherId);
-  if (!ext) {
+  if (!ext || ext.userId !== req.user.id) {
     return res.status(404).json({ error: "Extinguisher not found." });
   }
 
@@ -605,6 +611,7 @@ app.post("/api/inspections", authenticate, (req: any, res) => {
 
   const scheduledIns: any = {
     id: "ins-" + crypto.randomUUID().slice(0, 8),
+    userId: req.user.id,
     extinguisherId,
     inspectorId,
     inspectionDate,
@@ -625,19 +632,21 @@ app.post("/api/inspections", authenticate, (req: any, res) => {
 });
 
 // List All Inspections
-app.get("/api/inspections", authenticate, (req, res) => {
+app.get("/api/inspections", authenticate, (req: any, res) => {
   const inspections = db.getInspections();
   
-  // Attach joined extinguisher and user metadata
-  const enriched = inspections.map((ins) => {
-    const ext = db.getExtinguisherById(ins.extinguisherId);
-    const inspector = db.getUsers().find((u) => u.id === ins.inspectorId);
-    return {
-      ...ins,
-      extinguisher: ext ? { serialNumber: ext.serialNumber, building: ext.building, location: ext.location } : null,
-      inspector: inspector ? { name: `${inspector.firstName} ${inspector.lastName}`, email: inspector.email } : null,
-    };
-  });
+  // Filter by user and attach joined extinguisher and user metadata
+  const enriched = inspections
+    .filter((ins) => ins.userId === req.user.id)
+    .map((ins) => {
+      const ext = db.getExtinguisherById(ins.extinguisherId);
+      const inspector = db.getUsers().find((u) => u.id === ins.inspectorId);
+      return {
+        ...ins,
+        extinguisher: ext ? { serialNumber: ext.serialNumber, building: ext.building, location: ext.location } : null,
+        inspector: inspector ? { name: `${inspector.firstName} ${inspector.lastName}`, email: inspector.email } : null,
+      };
+    });
   
   return res.json(enriched);
 });
@@ -646,7 +655,7 @@ app.get("/api/inspections", authenticate, (req, res) => {
 app.put("/api/inspections/:id/complete", authenticate, authorize(["ADMIN", "INSPECTOR"]), (req: any, res) => {
   const { notes, status } = req.body; // status could be COMPLETED or OVERDUE
   const ins = db.getInspections().find((i) => i.id === req.params.id);
-  if (!ins) {
+  if (!ins || ins.userId !== req.user.id) {
     return res.status(404).json({ error: "Scheduled inspection was not found." });
   }
 
@@ -684,12 +693,13 @@ app.post("/api/maintenance", authenticate, authorize(["ADMIN", "INSPECTOR"]), (r
   }
 
   const ext = db.getExtinguisherById(extinguisherId);
-  if (!ext) {
+  if (!ext || ext.userId !== req.user.id) {
     return res.status(404).json({ error: "Fire extinguisher not found." });
   }
 
   const newLog: any = {
     id: "maint-" + crypto.randomUUID().slice(0, 8),
+    userId: req.user.id,
     extinguisherId,
     inspectorId: req.user.id,
     actionTaken,
@@ -712,18 +722,20 @@ app.post("/api/maintenance", authenticate, authorize(["ADMIN", "INSPECTOR"]), (r
 });
 
 // List All Maintenance Services Logs
-app.get("/api/maintenance", authenticate, (req, res) => {
+app.get("/api/maintenance", authenticate, (req: any, res) => {
   const logs = db.getMaintenanceLogs();
   
-  const enriched = logs.map((lg) => {
-    const ext = db.getExtinguisherById(lg.extinguisherId);
-    const inspector = db.getUsers().find((u) => u.id === lg.inspectorId);
-    return {
-      ...lg,
-      extinguisher: ext ? { serialNumber: ext.serialNumber, building: ext.building, location: ext.location, type: ext.type, size: ext.size } : null,
-      inspector: inspector ? { name: `${inspector.firstName} ${inspector.lastName}`, email: inspector.email } : null,
-    };
-  });
+  const enriched = logs
+    .filter((lg) => lg.userId === req.user.id)
+    .map((lg) => {
+      const ext = db.getExtinguisherById(lg.extinguisherId);
+      const inspector = db.getUsers().find((u) => u.id === lg.inspectorId);
+      return {
+        ...lg,
+        extinguisher: ext ? { serialNumber: ext.serialNumber, building: ext.building, location: ext.location, type: ext.type, size: ext.size } : null,
+        inspector: inspector ? { name: `${inspector.firstName} ${inspector.lastName}`, email: inspector.email } : null,
+      };
+    });
 
   return res.json(enriched);
 });
@@ -733,10 +745,15 @@ app.get("/api/maintenance", authenticate, (req, res) => {
 // ACTIVITY 4: REPORTING SERVICE ENDPOINTS
 // ==========================================================
 
-app.get("/api/reports", authenticate, (req, res) => {
-  const extinguishers = db.getExtinguishers();
-  const inspections = db.getInspections();
-  const logs = db.getMaintenanceLogs();
+app.get("/api/reports", authenticate, (req: any, res) => {
+  const allExtinguishers = db.getExtinguishers();
+  const allInspections = db.getInspections();
+  const allLogs = db.getMaintenanceLogs();
+  
+  // Filter all data by current user
+  const extinguishers = allExtinguishers.filter((e) => e.userId === req.user.id);
+  const inspections = allInspections.filter((i) => i.userId === req.user.id);
+  const logs = allLogs.filter((l) => l.userId === req.user.id);
   
   // 1. Inventory counts
   const total = extinguishers.length;

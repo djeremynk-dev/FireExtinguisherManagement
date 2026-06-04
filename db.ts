@@ -22,6 +22,7 @@ export interface User {
 
 export interface FireExtinguisher {
   id: string;
+  userId: string;
   serialNumber: string;
   location: string;
   building: string;
@@ -36,6 +37,7 @@ export interface FireExtinguisher {
 
 export interface Inspection {
   id: string;
+  userId: string;
   extinguisherId: string;
   inspectorId: string;
   inspectionDate: string;
@@ -48,6 +50,7 @@ export interface Inspection {
 
 export interface MaintenanceLog {
   id: string;
+  userId: string;
   extinguisherId: string;
   inspectorId: string;
   actionTaken: string;
@@ -106,6 +109,7 @@ const defaultState: DatabaseState = {
   extinguishers: [
     {
       id: "fe1",
+      userId: "u1",
       serialNumber: "FE-2026-9901",
       building: "Building A",
       location: "Lobby Main Entrance",
@@ -119,6 +123,7 @@ const defaultState: DatabaseState = {
     },
     {
       id: "fe2",
+      userId: "u1",
       serialNumber: "FE-2023-1102",
       building: "Building A",
       location: "Server Room - Floor 2",
@@ -132,6 +137,7 @@ const defaultState: DatabaseState = {
     },
     {
       id: "fe3",
+      userId: "u1",
       serialNumber: "FE-2021-0841",
       building: "Building B",
       location: "Kitchen Breakroom - Floor 1",
@@ -145,6 +151,7 @@ const defaultState: DatabaseState = {
     },
     {
       id: "fe4",
+      userId: "u1",
       serialNumber: "FE-2025-4509",
       building: "Building C",
       location: "Chemical Store - Warehouse East",
@@ -158,6 +165,7 @@ const defaultState: DatabaseState = {
     },
     {
       id: "fe5",
+      userId: "u1",
       serialNumber: "FE-2025-8822",
       building: "Building A",
       location: "Parking Garage Pillar D4",
@@ -173,6 +181,7 @@ const defaultState: DatabaseState = {
   inspections: [
     {
       id: "ins1",
+      userId: "u1",
       extinguisherId: "fe1",
       inspectorId: "u2",
       inspectionDate: "2026-05-20",
@@ -184,6 +193,7 @@ const defaultState: DatabaseState = {
     },
     {
       id: "ins2",
+      userId: "u1",
       extinguisherId: "fe4",
       inspectorId: "u2",
       inspectionDate: "2026-05-15", // Past date, still scheduled => Overdue
@@ -193,6 +203,7 @@ const defaultState: DatabaseState = {
     },
     {
       id: "ins3",
+      userId: "u1",
       extinguisherId: "fe2",
       inspectorId: "u2",
       inspectionDate: "2026-06-10", // Upcoming scheduled
@@ -202,6 +213,7 @@ const defaultState: DatabaseState = {
     },
     {
       id: "ins4",
+      userId: "u1",
       extinguisherId: "fe5",
       inspectorId: "u2",
       inspectionDate: "2026-05-18",
@@ -215,6 +227,7 @@ const defaultState: DatabaseState = {
   maintenanceLogs: [
     {
       id: "maint1",
+      userId: "u1",
       extinguisherId: "fe5",
       inspectorId: "u2",
       actionTaken: "Replaced discharge hose and refilled pressure charge.",

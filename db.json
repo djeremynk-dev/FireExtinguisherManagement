@@ -26,11 +26,30 @@
       "lastName": "Miller",
       "role": "USER",
       "createdAt": "2026-02-01T14:15:00Z"
+    },
+    {
+      "id": "usr-16c3feb2",
+      "firstName": "Bela",
+      "lastName": "Tok",
+      "email": "belatok673@5nek.com",
+      "passwordHash": "92d900ea9d3e52306e085fdaff5d530e1eb88f64c794418a13a4532b58481af9",
+      "role": "USER",
+      "createdAt": "2026-06-04T08:59:03.094Z"
+    },
+    {
+      "id": "usr-2d8f80c5",
+      "firstName": "Bela",
+      "lastName": "Tok",
+      "email": "belatok6732@5nek.com",
+      "passwordHash": "4e6a71c412ba44327b83ff318eee76549e013f1bca50f319a0d734e3e6229e4f",
+      "role": "USER",
+      "createdAt": "2026-06-04T09:18:50.755Z"
     }
   ],
   "extinguishers": [
     {
       "id": "fe1",
+      "userId": "u1",
       "serialNumber": "FE-2026-9901",
       "building": "Building A",
       "location": "Lobby Main Entrance",
@@ -44,6 +63,7 @@
     },
     {
       "id": "fe2",
+      "userId": "u1",
       "serialNumber": "FE-2023-1102",
       "building": "Building A",
       "location": "Server Room - Floor 2",
@@ -53,10 +73,11 @@
       "expiryDate": "2028-01-15",
       "status": "ACTIVE",
       "createdAt": "2023-01-15T12:00:00Z",
-      "updatedAt": "2026-05-10T09:00:00Z"
+      "updatedAt": "2026-06-04T08:48:55.383Z"
     },
     {
       "id": "fe3",
+      "userId": "u1",
       "serialNumber": "FE-2021-0841",
       "building": "Building B",
       "location": "Kitchen Breakroom - Floor 1",
@@ -70,6 +91,7 @@
     },
     {
       "id": "fe4",
+      "userId": "u1",
       "serialNumber": "FE-2025-4509",
       "building": "Building C",
       "location": "Chemical Store - Warehouse East",
@@ -83,6 +105,7 @@
     },
     {
       "id": "fe5",
+      "userId": "u1",
       "serialNumber": "FE-2025-8822",
       "building": "Building A",
       "location": "Parking Garage Pillar D4",
@@ -93,11 +116,25 @@
       "status": "NEED_MAINTENANCE",
       "createdAt": "2025-10-15T11:00:00Z",
       "updatedAt": "2026-05-18T16:00:00Z"
+    },
+    {
+      "id": "ext-94ff1eba",
+      "serialNumber": "FE-2026-1201",
+      "building": "Main Tech Center",
+      "location": "Main Hall",
+      "type": "Foam",
+      "size": "9 lb",
+      "installationDate": "2026-06-03",
+      "expiryDate": "2031-05-29",
+      "status": "ACTIVE",
+      "createdAt": "2026-06-04T09:16:38.937Z",
+      "updatedAt": "2026-06-04T09:16:38.938Z"
     }
   ],
   "inspections": [
     {
       "id": "ins1",
+      "userId": "u1",
       "extinguisherId": "fe1",
       "inspectorId": "u2",
       "inspectionDate": "2026-05-20",
@@ -109,6 +146,7 @@
     },
     {
       "id": "ins2",
+      "userId": "u1",
       "extinguisherId": "fe4",
       "inspectorId": "u2",
       "inspectionDate": "2026-05-15",
@@ -118,6 +156,7 @@
     },
     {
       "id": "ins3",
+      "userId": "u1",
       "extinguisherId": "fe2",
       "inspectorId": "u2",
       "inspectionDate": "2026-06-10",
@@ -127,6 +166,7 @@
     },
     {
       "id": "ins4",
+      "userId": "u1",
       "extinguisherId": "fe5",
       "inspectorId": "u2",
       "inspectionDate": "2026-05-18",
@@ -140,6 +180,7 @@
   "maintenanceLogs": [
     {
       "id": "maint1",
+      "userId": "u1",
       "extinguisherId": "fe5",
       "inspectorId": "u2",
       "actionTaken": "Replaced discharge hose and refilled pressure charge.",
@@ -148,6 +189,18 @@
       "notes": "Extinguisher performs safely now. Marked for monitoring due to exposure to outdoor elements.",
       "recommendations": "Schedule next detailed inspection in 3 months.",
       "createdAt": "2026-05-18T16:05:00Z"
+    },
+    {
+      "id": "maint-e859e2ac",
+      "userId": "u1",
+      "extinguisherId": "fe2",
+      "inspectorId": "u1",
+      "actionTaken": "Refill",
+      "maintenanceDate": "2026-06-03",
+      "issuesIdentified": "Used",
+      "notes": "",
+      "recommendations": "",
+      "createdAt": "2026-06-04T08:48:55.374Z"
     }
   ]
 }
