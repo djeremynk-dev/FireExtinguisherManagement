@@ -750,7 +750,7 @@ export default function App() {
 
                   {/* Email */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-400">Coordination Email (*)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-400">Email (*)</label>
                     <input
                       type="email"
                       required
@@ -762,7 +762,7 @@ export default function App() {
 
                   {/* Password */}
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-400">Secret Hashed Password (*)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-400">Password (*)</label>
                     <input
                       type="password"
                       required
@@ -799,7 +799,7 @@ export default function App() {
                   </div>
 
                   {/* Role Selector */}
-                  <div className="space-y-1">
+                  {/* <div className="space-y-1">
                     <label className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-35 text-slate-400">Default Authorized Role</label>
                     <select
                       className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold text-xs"
@@ -810,7 +810,7 @@ export default function App() {
                       <option value="INSPECTOR">INSPECTOR (Mechanic)</option>
                       <option value="ADMIN">ADMINISTRATOR (Full)</option>
                     </select>
-                  </div>
+                  </div> */}
 
                   <button
                     type="submit"

@@ -44,6 +44,15 @@
       "passwordHash": "4e6a71c412ba44327b83ff318eee76549e013f1bca50f319a0d734e3e6229e4f",
       "role": "USER",
       "createdAt": "2026-06-04T09:18:50.755Z"
+    },
+    {
+      "id": "usr-0116eeba",
+      "firstName": "NKUNDAGENZI",
+      "lastName": "Jeremy",
+      "email": "nkundabagenzijeremy@gmail.com",
+      "passwordHash": "3db80e3c4088d4a433762af92f27b0b4d99fddebf6b04cab339a08a2b1625200",
+      "role": "USER",
+      "createdAt": "2026-06-04T09:55:43.947Z"
     }
   ],
   "extinguishers": [
