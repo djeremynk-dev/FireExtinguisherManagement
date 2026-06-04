@@ -22,6 +22,33 @@ import {
 
 import { User, FireExtinguisher, Inspection, MaintenanceLog, ReportStats, Role } from "./types";
 
+// Password strength validation helper
+const validatePasswordStrength = (password: string): { isStrong: boolean; feedback: string } => {
+  const minLength = 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+  if (password.length < minLength) {
+    return { isStrong: false, feedback: `Password must be at least ${minLength} characters long.` };
+  }
+  if (!hasUppercase) {
+    return { isStrong: false, feedback: "Password must contain at least one uppercase letter." };
+  }
+  if (!hasLowercase) {
+    return { isStrong: false, feedback: "Password must contain at least one lowercase letter." };
+  }
+  if (!hasNumber) {
+    return { isStrong: false, feedback: "Password must contain at least one number." };
+  }
+  if (!hasSpecial) {
+    return { isStrong: false, feedback: "Password must contain at least one special character (!@#$%^&*, etc)." };
+  }
+
+  return { isStrong: true, feedback: "Password strength is excellent." };
+};
+
 // Views components
 import DashboardView from "./components/DashboardView";
 import ExtinguisherView from "./components/ExtinguisherView";
@@ -69,6 +96,9 @@ export default function App() {
   const [showAddExtModal, setShowAddExtModal] = useState(false);
   const [showScheduleInsModal, setShowScheduleInsModal] = useState(false);
   const [showLogMaintModal, setShowLogMaintModal] = useState(false);
+
+  // Password strength feedback
+  const [passwordFeedback, setPasswordFeedback] = useState<{ isStrong: boolean; feedback: string } | null>(null);
 
   // Sync session lists upon login
   useEffect(() => {
@@ -149,6 +179,14 @@ export default function App() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(regForm.password);
+    if (!passwordValidation.isStrong) {
+      setAuthError(passwordValidation.feedback);
+      return;
+    }
+
     setLoading(true);
     setAuthError(null);
     try {
@@ -167,6 +205,7 @@ export default function App() {
       setToken(data.token);
       setCurrentUser(data.user);
       setRegForm({ firstName: "", lastName: "", email: "", password: "", role: "USER" });
+      setPasswordFeedback(null);
       setIsRegistering(false);
       setActiveTab("dashboard");
     } catch (err: any) {
@@ -722,16 +761,41 @@ export default function App() {
                   </div>
 
                   {/* Password */}
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-400">Secret Hashed Password (*)</label>
                     <input
                       type="password"
                       required
-                      placeholder="Minimum 6 characters"
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold"
+                      placeholder="Min 8 chars, uppercase, lowercase, number, special char"
+                      className={`w-full px-3 py-2 bg-slate-950 border rounded-xl text-white font-semibold transition ${
+                        regForm.password
+                          ? passwordFeedback?.isStrong
+                            ? "border-green-600"
+                            : "border-red-600"
+                          : "border-slate-800"
+                      }`}
                       value={regForm.password}
-                      onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
+                      onChange={(e) => {
+                        setRegForm({ ...regForm, password: e.target.value });
+                        if (e.target.value) {
+                          setPasswordFeedback(validatePasswordStrength(e.target.value));
+                        } else {
+                          setPasswordFeedback(null);
+                        }
+                      }}
                     />
+                    {passwordFeedback && (
+                      <div
+                        className={`p-2 rounded-lg text-[10px] font-semibold ${
+                          passwordFeedback.isStrong
+                            ? "bg-green-500/10 border border-green-500/30 text-green-300"
+                            : "bg-red-500/10 border border-red-500/30 text-red-300"
+                        }`}
+                      >
+                        {passwordFeedback.isStrong ? "✓ " : "✗ "}
+                        {passwordFeedback.feedback}
+                      </div>
+                    )}
                   </div>
 
                   {/* Role Selector */}

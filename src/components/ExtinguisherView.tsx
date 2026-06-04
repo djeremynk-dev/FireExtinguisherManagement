@@ -134,6 +134,28 @@ export default function ExtinguisherView({
       alert("Please fill in all required fields.");
       return;
     }
+
+    // Validate dates
+    const instDate = new Date(addForm.installationDate);
+    const expDate = new Date(addForm.expiryDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (isNaN(instDate.getTime()) || isNaN(expDate.getTime())) {
+      alert("Please enter valid installation and expiry dates.");
+      return;
+    }
+
+    if (expDate <= instDate) {
+      alert("Expiry date must be after installation date.");
+      return;
+    }
+
+    if (expDate <= today) {
+      alert("Expiry date cannot be in the past or today.");
+      return;
+    }
+
     const success = await onAddExtinguisher(addForm);
     if (success) {
       setShowAddModal(false);
@@ -168,6 +190,28 @@ export default function ExtinguisherView({
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate dates
+    const instDate = new Date(editForm.installationDate);
+    const expDate = new Date(editForm.expiryDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (isNaN(instDate.getTime()) || isNaN(expDate.getTime())) {
+      alert("Please enter valid installation and expiry dates.");
+      return;
+    }
+
+    if (expDate <= instDate) {
+      alert("Expiry date must be after installation date.");
+      return;
+    }
+
+    if (expDate <= today) {
+      alert("Expiry date cannot be in the past or today.");
+      return;
+    }
+
     const success = await onUpdateExtinguisher(editForm.id, editForm);
     if (success) {
       setShowEditModal(false);
@@ -875,32 +919,26 @@ export default function ExtinguisherView({
             </div>
             <form onSubmit={handleScheduleSubmit} className="p-6 space-y-4">
               
-              {/* Select Extinguisher if direct scheduling */}
+              {/* Select Extinguisher - Always show dropdown */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 block">Fire Extinguisher (*)</label>
-                {scheduleForm.extinguisherId ? (
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium">
-                    <p className="font-bold text-slate-900 font-mono">
-                      {extinguishers.find((e) => e.id === scheduleForm.extinguisherId)?.serialNumber || "Loading..."}
-                    </p>
-                    <p className="text-slate-500 font-medium">
-                      {extinguishers.find((e) => e.id === scheduleForm.extinguisherId)?.building} - {extinguishers.find((e) => e.id === scheduleForm.extinguisherId)?.location}
-                    </p>
+                <select
+                  required
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
+                  value={scheduleForm.extinguisherId}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, extinguisherId: e.target.value })}
+                >
+                  <option value="">-- Choose Cylinder --</option>
+                  {extinguishers.map((ext) => (
+                    <option key={ext.id} value={ext.id}>
+                      {ext.serialNumber} - {ext.building} ({ext.location})
+                    </option>
+                  ))}
+                </select>
+                {scheduleForm.extinguisherId && (
+                  <div className="p-2 bg-green-50 border border-green-200 rounded-lg text-xs mt-1.5">
+                    <p className="font-bold text-green-900 font-mono">✓ Selected</p>
                   </div>
-                ) : (
-                  <select
-                    required
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white"
-                    value={scheduleForm.extinguisherId}
-                    onChange={(e) => setScheduleForm({ ...scheduleForm, extinguisherId: e.target.value })}
-                  >
-                    <option value="">-- Choose Cylinder --</option>
-                    {extinguishers.map((ext) => (
-                      <option key={ext.id} value={ext.id}>
-                        {ext.serialNumber} - {ext.building} ({ext.location})
-                      </option>
-                    ))}
-                  </select>
                 )}
               </div>
 
