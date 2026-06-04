@@ -1,0 +1,1171 @@
+openapi: 3.0.3
+info:
+  title: TZW LTD Fire Extinguisher Management API
+  description: |
+    RESTful microservices API for TZW LTD fire extinguisher management.
+    All routes are exposed through the API Gateway (port 5000).
+
+    **Authentication:** Use `POST /auth/login` or `POST /auth/register`, then pass the
+    `accessToken` as `Authorization: Bearer <token>` on protected routes.
+
+    **Roles:** `ADMIN`, `INSPECTOR`, `USER`
+  version: 1.0.0
+  contact:
+    name: TZW LTD
+    email: support@tzw.example.com
+
+servers:
+  - url: http://localhost:5000
+    description: Local API Gateway
+
+tags:
+  - name: Health
+  - name: Auth
+    description: Authentication service (port 5001)
+  - name: Users
+    description: User management service (port 5007)
+  - name: Extinguishers
+    description: Fire extinguisher service (port 5003)
+  - name: Inspections
+    description: Inspection scheduling service (port 5004)
+  - name: Maintenance
+    description: Maintenance logging service (port 5005)
+  - name: Reporting
+    description: Reporting service (port 5006)
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: API Gateway health check
+      responses:
+        '200':
+          description: Gateway is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (invalidate refresh tokens)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/profile:
+    patch:
+      tags: [Auth]
+      summary: Update own profile (auth service)
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /auth/change-password:
+    patch:
+      tags: [Auth]
+      summary: Change password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Reset initiated (dev may return resetToken)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  resetToken:
+                    type: string
+                    description: Only returned in development when email service is not configured
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get own profile (user service)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    patch:
+      tags: [Users]
+      summary: Update own profile (user service)
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserProfileRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List users (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserRole'
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Users]
+      summary: Get user by ID (Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Users]
+      summary: Update user (Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateUserRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    delete:
+      tags: [Users]
+      summary: Delete user (Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /extinguishers:
+    get:
+      tags: [Extinguishers]
+      summary: List all fire extinguishers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FireExtinguisher'
+    post:
+      tags: [Extinguishers]
+      summary: Register new fire extinguisher
+      description: Requires ADMIN or INSPECTOR role
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFireExtinguisherRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireExtinguisherResponse'
+
+  /extinguishers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Extinguishers]
+      summary: Get extinguisher by ID
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireExtinguisherResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Extinguishers]
+      summary: Update extinguisher
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFireExtinguisherRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireExtinguisherResponse'
+    delete:
+      tags: [Extinguishers]
+      summary: Delete extinguisher (Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /inspections:
+    get:
+      tags: [Inspections]
+      summary: List inspections
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Inspection'
+    post:
+      tags: [Inspections]
+      summary: Schedule inspection
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleInspectionRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionResponse'
+
+  /inspections/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Inspections]
+      summary: Get inspection by ID
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionResponse'
+    patch:
+      tags: [Inspections]
+      summary: Update inspection
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInspectionRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionResponse'
+    delete:
+      tags: [Inspections]
+      summary: Delete inspection (Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /maintenance:
+    get:
+      tags: [Maintenance]
+      summary: List maintenance logs
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MaintenanceLog'
+    post:
+      tags: [Maintenance]
+      summary: Log maintenance activity
+      description: Requires ADMIN or INSPECTOR role
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMaintenanceRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceResponse'
+
+  /maintenance/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Maintenance]
+      summary: Get maintenance log by ID
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceResponse'
+    patch:
+      tags: [Maintenance]
+      summary: Update maintenance log
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMaintenanceRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceResponse'
+    delete:
+      tags: [Maintenance]
+      summary: Delete maintenance log (Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /reporting/summary:
+    get:
+      tags: [Reporting]
+      summary: Dashboard summary counts
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      extinguishers:
+                        type: integer
+                      inspections:
+                        type: integer
+                      maintenanceLogs:
+                        type: integer
+
+  /reporting/extinguishers:
+    get:
+      tags: [Reporting]
+      summary: Inventory and compliance extinguisher stats
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ExtinguisherStatus'
+        - name: location
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Extinguisher statistics
+
+  /reporting/inspections:
+    get:
+      tags: [Reporting]
+      summary: Inspection statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InspectionStatus'
+        - name: outcome
+          in: query
+          schema:
+            $ref: '#/components/schemas/InspectionOutcome'
+      responses:
+        '200':
+          description: Inspection statistics
+
+  /reporting/maintenance:
+    get:
+      tags: [Reporting]
+      summary: Maintenance statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/MaintenanceStatus'
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Maintenance statistics
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token from /auth/login or /auth/register
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    DateFrom:
+      name: from
+      in: query
+      schema:
+        type: string
+        format: date
+    DateTo:
+      name: to
+      in: query
+      schema:
+        type: string
+        format: date
+
+  responses:
+    BadRequest:
+      description: Validation or business rule error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Insufficient role permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        errors:
+          type: object
+
+    MessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    UserRole:
+      type: string
+      enum: [ADMIN, INSPECTOR, USER]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phoneNumber:
+          type: string
+          nullable: true
+        role:
+          $ref: '#/components/schemas/UserRole'
+        isActive:
+          type: boolean
+        isEmailVerified:
+          type: boolean
+        jobTitle:
+          type: string
+          nullable: true
+        department:
+          type: string
+          nullable: true
+        avatarUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    RegisterRequest:
+      type: object
+      required: [firstName, lastName, email, password]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        phoneNumber:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+
+    UserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/User'
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phoneNumber:
+          type: string
+
+    UpdateUserProfileRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phoneNumber:
+          type: string
+        jobTitle:
+          type: string
+        department:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+
+    AdminUpdateUserRequest:
+      allOf:
+        - $ref: '#/components/schemas/UpdateUserProfileRequest'
+        - type: object
+          properties:
+            role:
+              $ref: '#/components/schemas/UserRole'
+            isActive:
+              type: boolean
+            isEmailVerified:
+              type: boolean
+
+    ExtinguisherType:
+      type: string
+      enum: [WATER, CO2, FOAM, DRY_CHEMICAL]
+
+    ExtinguisherSize:
+      type: string
+      enum: [LB_2_5, LB_5, LB_9, LB_12]
+
+    ExtinguisherStatus:
+      type: string
+      enum: [ACTIVE, EXPIRED, NEEDS_INSPECTION, UNDER_MAINTENANCE, OUT_OF_SERVICE]
+
+    FireExtinguisher:
+      type: object
+      properties:
+        id:
+          type: string
+        serialNumber:
+          type: string
+        location:
+          type: string
+        type:
+          $ref: '#/components/schemas/ExtinguisherType'
+        size:
+          $ref: '#/components/schemas/ExtinguisherSize'
+        installationDate:
+          type: string
+          format: date-time
+        expiryDate:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/ExtinguisherStatus'
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateFireExtinguisherRequest:
+      type: object
+      required: [serialNumber, location, type, size, installationDate, expiryDate]
+      properties:
+        serialNumber:
+          type: string
+        location:
+          type: string
+        type:
+          $ref: '#/components/schemas/ExtinguisherType'
+        size:
+          $ref: '#/components/schemas/ExtinguisherSize'
+        installationDate:
+          type: string
+          format: date
+        expiryDate:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/ExtinguisherStatus'
+        notes:
+          type: string
+
+    UpdateFireExtinguisherRequest:
+      type: object
+      properties:
+        serialNumber:
+          type: string
+        location:
+          type: string
+        type:
+          $ref: '#/components/schemas/ExtinguisherType'
+        size:
+          $ref: '#/components/schemas/ExtinguisherSize'
+        installationDate:
+          type: string
+          format: date
+        expiryDate:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/ExtinguisherStatus'
+        notes:
+          type: string
+
+    FireExtinguisherResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/FireExtinguisher'
+
+    InspectionStatus:
+      type: string
+      enum: [SCHEDULED, IN_PROGRESS, COMPLETED, FAILED, OVERDUE, CANCELLED]
+
+    InspectionOutcome:
+      type: string
+      enum: [PASSED, FAILED, PENDING]
+
+    Inspection:
+      type: object
+      properties:
+        id:
+          type: string
+        extinguisherId:
+          type: string
+        inspectorId:
+          type: string
+          nullable: true
+        scheduledDate:
+          type: string
+          format: date-time
+        scheduledTime:
+          type: string
+        actualDate:
+          type: string
+          format: date-time
+          nullable: true
+        findings:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/InspectionStatus'
+        outcome:
+          $ref: '#/components/schemas/InspectionOutcome'
+        notes:
+          type: string
+          nullable: true
+
+    ScheduleInspectionRequest:
+      type: object
+      required: [extinguisherId, scheduledDate, scheduledTime]
+      properties:
+        extinguisherId:
+          type: string
+        scheduledDate:
+          type: string
+          format: date
+        scheduledTime:
+          type: string
+          example: '09:00'
+        inspectorId:
+          type: string
+        notes:
+          type: string
+
+    UpdateInspectionRequest:
+      type: object
+      properties:
+        scheduledDate:
+          type: string
+          format: date
+        scheduledTime:
+          type: string
+        actualDate:
+          type: string
+          format: date
+        findings:
+          type: string
+        status:
+          $ref: '#/components/schemas/InspectionStatus'
+        outcome:
+          $ref: '#/components/schemas/InspectionOutcome'
+        notes:
+          type: string
+
+    InspectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Inspection'
+
+    MaintenanceStatus:
+      type: string
+      enum: [PENDING, COMPLETED, OVERDUE, CANCELLED]
+
+    MaintenanceLog:
+      type: object
+      properties:
+        id:
+          type: string
+        extinguisherId:
+          type: string
+        inspectorId:
+          type: string
+          nullable: true
+        maintenanceType:
+          type: string
+        serviceDate:
+          type: string
+          format: date-time
+        details:
+          type: string
+        status:
+          $ref: '#/components/schemas/MaintenanceStatus'
+        nextServiceDue:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    CreateMaintenanceRequest:
+      type: object
+      required: [extinguisherId, maintenanceType, serviceDate, details]
+      properties:
+        extinguisherId:
+          type: string
+        maintenanceType:
+          type: string
+          description: Action taken
+        serviceDate:
+          type: string
+          format: date
+        details:
+          type: string
+          description: Issues identified and work performed
+        inspectorId:
+          type: string
+        status:
+          $ref: '#/components/schemas/MaintenanceStatus'
+        nextServiceDue:
+          type: string
+          format: date
+        notes:
+          type: string
+          description: Notes and recommendations
+
+    UpdateMaintenanceRequest:
+      type: object
+      properties:
+        extinguisherId:
+          type: string
+        maintenanceType:
+          type: string
+        serviceDate:
+          type: string
+          format: date
+        details:
+          type: string
+        status:
+          $ref: '#/components/schemas/MaintenanceStatus'
+        nextServiceDue:
+          type: string
+          format: date
+        notes:
+          type: string
+
+    MaintenanceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/MaintenanceLog'

@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ExtinguisherType {
+  WATER
+  CO2
+  FOAM
+  DRY_CHEMICAL
+}
+
+enum ExtinguisherSize {
+  LB_2_5
+  LB_5
+  LB_9
+  LB_12
+}
+
+enum ExtinguisherStatus {
+  ACTIVE
+  EXPIRED
+  NEEDS_INSPECTION
+  UNDER_MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+model FireExtinguisher {
+  id               String             @id @default(cuid())
+  serialNumber     String             @unique
+  location         String
+  type             ExtinguisherType
+  size             ExtinguisherSize
+  installationDate DateTime
+  expiryDate       DateTime
+  status           ExtinguisherStatus @default(ACTIVE)
+  notes            String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([serialNumber])
+  @@index([status])
+  @@index([location])
+  @@map("fire_extinguishers")
+}

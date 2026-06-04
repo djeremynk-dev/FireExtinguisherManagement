@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MaintenanceStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+model MaintenanceLog {
+  id               String             @id @default(cuid())
+  extinguisherId   String
+  inspectorId      String?
+  maintenanceType  String
+  serviceDate      DateTime
+  details          String
+  status           MaintenanceStatus  @default(PENDING)
+  nextServiceDue   DateTime?
+  notes            String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([extinguisherId])
+  @@index([inspectorId])
+  @@index([status])
+  @@index([serviceDate])
+  @@map("maintenance_logs")
+}

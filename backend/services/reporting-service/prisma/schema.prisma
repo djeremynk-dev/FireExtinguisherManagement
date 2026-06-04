@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ExtinguisherStatus {
+  ACTIVE
+  EXPIRED
+  NEEDS_INSPECTION
+  UNDER_MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+enum InspectionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  OVERDUE
+  CANCELLED
+}
+
+enum InspectionOutcome {
+  PASSED
+  FAILED
+  PENDING
+}
+
+enum MaintenanceStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+model ExtinguisherSnapshot {
+  id               String             @id @default(cuid())
+  extinguisherId   String             // foreign key in original system
+  serialNumber     String
+  location         String
+  status           ExtinguisherStatus
+  expiryDate       DateTime
+  buildingName     String?
+  lastInspectionAt DateTime?
+  lastServiceAt    DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([extinguisherId])
+  @@index([status])
+  @@index([expiryDate])
+  @@map("extinguisher_snapshots")
+}
+
+model InspectionSnapshot {
+  id             String             @id @default(cuid())
+  inspectionId   String
+  extinguisherId String
+  status         InspectionStatus
+  outcome        InspectionOutcome
+  scheduledDate  DateTime
+  actualDate     DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([inspectionId])
+  @@index([extinguisherId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@map("inspection_snapshots")
+}
+
+model MaintenanceSnapshot {
+  id              String             @id @default(cuid())
+  maintenanceId   String
+  extinguisherId  String
+  status          MaintenanceStatus
+  serviceDate     DateTime
+  maintenanceType String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([maintenanceId])
+  @@index([extinguisherId])
+  @@index([status])
+  @@index([serviceDate])
+  @@map("maintenance_snapshots")
+}

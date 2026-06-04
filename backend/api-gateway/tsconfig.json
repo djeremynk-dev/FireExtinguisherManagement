@@ -1,0 +1,13 @@
+{
+  "extends": "../../shared/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true
+  },
+  "include": ["*.ts", "middleware/**/*.ts", "proxy/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

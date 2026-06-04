@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum InspectionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  OVERDUE
+  CANCELLED
+}
+
+enum InspectionOutcome {
+  PASSED
+  FAILED
+  PENDING
+}
+
+model Inspection {
+  id             String             @id @default(cuid())
+  extinguisherId  String
+  inspectorId    String?
+  scheduledDate  DateTime
+  scheduledTime  String
+  actualDate     DateTime?
+  findings       String?
+  status         InspectionStatus   @default(SCHEDULED)
+  outcome        InspectionOutcome  @default(PENDING)
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([extinguisherId])
+  @@index([inspectorId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@map("inspections")
+}

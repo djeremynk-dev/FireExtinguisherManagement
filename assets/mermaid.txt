@@ -1,0 +1,99 @@
+---
+config:
+  layout: elk
+---
+erDiagram
+    USERS ||--o{ FIRE_EXTINGUISHERS : owns
+    USERS ||--o{ INSPECTIONS : schedules
+    USERS ||--o{ MAINTENANCE_LOGS : logs
+    USERS ||--o{ COMPLIANCE_RECORDS : monitors
+    FIRE_EXTINGUISHERS ||--o{ INSPECTIONS : undergoes
+    FIRE_EXTINGUISHERS ||--o{ MAINTENANCE_LOGS : receives
+    FIRE_EXTINGUISHERS ||--o{ COMPLIANCE_RECORDS : tracks
+    USERS ||--o{ USER_ROLES : has
+    INSPECTION_TYPES ||--o{ INSPECTIONS : categorized_by
+    MAINTENANCE_TYPES ||--o{ MAINTENANCE_LOGS : categorized_by
+
+    USERS {
+        int user_id PK
+        string first_name
+        string last_name
+        string email UK
+        string password_hash
+        int role_id FK
+        string phone_number
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+
+    USER_ROLES {
+        int role_id PK
+        string role_name
+        string description
+    }
+
+    FIRE_EXTINGUISHERS {
+        int extinguisher_id PK
+        int user_id FK
+        string serial_number UK
+        string type
+        string size
+        string location
+        datetime installation_date
+        datetime expiry_date
+        string status
+        datetime last_inspected
+        datetime last_maintained
+        datetime created_at
+        datetime updated_at
+    }
+
+    INSPECTION_TYPES {
+        int inspection_type_id PK
+        string type_name
+        string description
+    }
+
+    INSPECTIONS {
+        int inspection_id PK
+        int extinguisher_id FK
+        int user_id FK
+        int inspection_type_id FK
+        datetime scheduled_date
+        datetime actual_date
+        string findings
+        string status
+        boolean passed
+        datetime created_at
+    }
+
+    MAINTENANCE_TYPES {
+        int maintenance_type_id PK
+        string type_name
+        string description
+    }
+
+    MAINTENANCE_LOGS {
+        int log_id PK
+        int extinguisher_id FK
+        int user_id FK
+        int maintenance_type_id FK
+        datetime service_date
+        string details
+        string status
+        datetime next_service_due
+        datetime created_at
+    }
+
+    COMPLIANCE_RECORDS {
+        int compliance_id PK
+        int extinguisher_id FK
+        int user_id FK
+        string regulation_standard
+        string compliance_status
+        datetime last_checked
+        datetime next_check_due
+        string notes
+        datetime created_at
+    }
